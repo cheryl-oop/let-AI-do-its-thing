@@ -61,12 +61,12 @@ export function PetStage(props: PetStageProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.setTransform(PET_SCALE, 0, 0, PET_SCALE, 0, 0)
       ctx.imageSmoothingEnabled = false
-      drawPet(ctx, { band, alive: props.alive, time })
+      drawPet(ctx, { band, time })
       frameId = requestAnimationFrame(render)
     }
     frameId = requestAnimationFrame(render)
     return () => cancelAnimationFrame(frameId)
-  }, [band, props.alive])
+  }, [band])
 
   return (
     <div className={`stage band-${props.alive ? band : 'gone'} ${props.noNoLabel ? 'alert' : ''}`}>

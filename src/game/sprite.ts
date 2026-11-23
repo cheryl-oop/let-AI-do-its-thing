@@ -1,59 +1,72 @@
-import type { MoodBand } from './types'
+import type { MoodBand } from "./types";
+export const PET_SIZE = 36;
+export const PET_SCALE = 8;
 
-export const PET_SIZE = 48
-export const PET_SCALE = 6
+/** The sprite itself is 27x30 logical pixels, near the top of the canvas. */
+const OX = 5;
+const OY = 3;
 
 interface Palette {
-  base: string
-  shade: string
-  light: string
-  leaf: string
-  leafDark: string
-  face: string
-  cheek: string
+  outline: string;
+  base: string;
+  light: string;
+  shade: string;
+  brown: string;
+  tan: string;
+  face: string;
+  cream: string;
+  blush: string;
+  leaf: string;
+  leafLight: string;
 }
 
 const HAPPY: Palette = {
-  base: '#ff5c5c',
-  shade: '#c93d4b',
-  light: '#ff9a9a',
-  leaf: '#57c76a',
-  leafDark: '#2f8a45',
-  face: '#2a1020',
-  cheek: '#ff9ec4',
-}
+  outline: "#a70639",
+  base: "#e04655",
+  light: "#ffa694",
+  shade: "#b1294f",
+  brown: "#9e2c38",
+  tan: "#cdb678",
+  face: "#fffffb",
+  cream: "#ebe8d0",
+  blush: "#ffb1be",
+  leaf: "#2da63c",
+  leafLight: "#91ef5f",
+};
 
 const BORED: Palette = {
-  base: '#c97777',
-  shade: '#9a5158',
-  light: '#e0a1a1',
-  leaf: '#8d9a5a',
-  leafDark: '#5f6b38',
-  face: '#2a1020',
-  cheek: '#c98a9a',
-}
+  outline: "#c4707e",
+  base: "#db919c",
+  light: "#e6bec4",
+  shade: "#a2b3b7",
+  brown: "#8d5c50",
+  tan: "#b59f6b",
+  face: "#f6f1e8",
+  cream: "#e4d9c2",
+  blush: "#e4babf",
+  leaf: "#7ea55f",
+  leafLight: "#a3c586",
+};
 
 const MAD: Palette = {
-  base: '#dc3f3f',
-  shade: '#8d1f26',
-  light: '#f47272',
-  leaf: '#7c6a3a',
-  leafDark: '#4f4322',
-  face: '#22100c',
-  cheek: '#b3352f',
-}
+  outline: "#c63a52",
+  base: "#e8576f",
+  light: "#f27f90",
+  shade: "#cf4259",
+  brown: "#903943",
+  tan: "#d07187",
+  face: "#ffdede",
+  cream: "#ecbac3",
+  blush: "#e06580",
+  leaf: "#2f8a2e",
+  leafLight: "#83b348",
+};
 
-const GONE: Palette = {
-  base: '#6a6a80',
-  shade: '#45455a',
-  light: '#8d8da3',
-  leaf: '#6a6752',
-  leafDark: '#484534',
-  face: '#181322',
-  cheek: '#585868',
-}
-
-const PALETTES: Record<MoodBand, Palette> = { happy: HAPPY, bored: BORED, mad: MAD }
+const PALETTES: Record<MoodBand, Palette> = {
+  happy: HAPPY,
+  bored: BORED,
+  mad: MAD,
+};
 
 function box(
   ctx: CanvasRenderingContext2D,
@@ -63,158 +76,239 @@ function box(
   h: number,
   color: string,
 ) {
-  ctx.fillStyle = color
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h))
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-function drawCross(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-  box(ctx, x, y, 1, 1, color)
-  box(ctx, x + 2, y, 1, 1, color)
-  box(ctx, x + 1, y + 1, 1, 1, color)
-  box(ctx, x, y + 2, 1, 1, color)
-  box(ctx, x + 2, y + 2, 1, 1, color)
+/** [row, column, pixels]. Each character is one pixel; "." is transparent. */
+type Stamp = [row: number, col: number, pixels: string];
+
+function stamp(
+  ctx: CanvasRenderingContext2D,
+  y0: number,
+  stamps: Stamp[],
+  colors: Record<string, string>,
+) {
+  for (const [row, col, pixels] of stamps) {
+    for (let i = 0; i < pixels.length; i++) {
+      const color = colors[pixels[i]];
+      if (color) box(ctx, OX + col + i, y0 + row, 1, 1, color);
+    }
+  }
 }
 
-function drawZ(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
-  box(ctx, x, y, 3, 1, color)
-  box(ctx, x + 1, y + 1, 1, 1, color)
-  box(ctx, x, y + 2, 3, 1, color)
+/** [left, right] column of the apple for rows 6..27. */
+const SPANS: Array<[number, number]> = [
+  [7, 19], // 6  (top edge)
+  [5, 21],
+  [3, 23],
+  [2, 24],
+  [1, 25],
+  [1, 25],
+  [1, 25], // 12
+  [0, 26],
+  [0, 26],
+  [0, 26],
+  [0, 26],
+  [0, 26],
+  [0, 26],
+  [0, 26], // 19
+  [1, 25],
+  [1, 25],
+  [2, 24],
+  [2, 24],
+  [3, 23],
+  [4, 22],
+  [6, 20],
+  [8, 18], // 27 (bottom edge)
+];
+const BODY_TOP = 6;
+const BODY_BOTTOM = 27;
+
+function drawBody(ctx: CanvasRenderingContext2D, y0: number, pal: Palette) {
+  SPANS.forEach(([left, right], i) => {
+    const row = BODY_TOP + i;
+    const y = y0 + row;
+
+    // Top and bottom rows are one solid outline strip.
+    if (row === BODY_TOP || row === BODY_BOTTOM) {
+      box(ctx, OX + left, y, right - left + 1, 1, pal.outline);
+      return;
+    }
+
+    // Outline thickness = how far the edge stepped in from the neighbouring row.
+    const neighbour = row <= 19 ? SPANS[i - 1] : SPANS[i + 1];
+    const w = Math.max(1, Math.abs(neighbour[0] - left));
+
+    box(ctx, OX + left, y, right - left + 1, 1, pal.base);
+    box(ctx, OX + left, y, w, 1, pal.outline);
+    box(ctx, OX + right - w + 1, y, w, 1, pal.outline);
+
+    // Soft highlight on the left (bigger near the top), shade on the right.
+    const lightW = row <= 12 ? 6 : 2;
+    box(ctx, OX + left + w, y, lightW, 1, pal.light);
+    if (row >= 9) box(ctx, OX + right - w - 2, y, 3, 1, pal.shade);
+  });
 }
+
+const CLEFT: Stamp[] = [
+  [8, 10, "o"],
+  [8, 16, "o"],
+  [9, 11, "ooooo"],
+];
+
+const STEM: Stamp[] = [
+  [0, 11, "bb"],
+  [1, 10, "bttb"],
+  [2, 10, "bttb"],
+  [3, 11, "btb"],
+  [4, 12, "btb"],
+  [5, 12, "btb"],
+  [6, 12, "btb"],
+  [7, 12, "btb"],
+  [8, 12, "btb"],
+];
+
+const LEAF: Stamp[] = [
+  [0, 16, "gggg"],
+  [1, 15, "gLLLLg"],
+  [2, 14, "gLLLLLLg"],
+  [3, 15, "gLLLLg"],
+  [4, 16, "gggg"],
+];
+
+/** Cat-face window. Columns 4..20, rows 13..24. b = brown, w = face, c = cream. */
+const FACE: Stamp[] = [
+  [13, 4, "bbb...........bbb"],
+  [14, 4, "bwwbb.bbbbb.bbwwb"],
+  [15, 4, "bwwwwbwwwwwbwwwwb"],
+  [16, 4, "bwwwwwwwwwwwwwwcb"],
+  [17, 4, "bwwwwwwwwwwwwwccb"],
+  [18, 4, "bwwwwwwwwwwwwwccb"],
+  [19, 4, "bwwwwwwwwwwwwwccb"],
+  [20, 4, "bwwwwwwwwwwwwwwcb"],
+  [21, 4, "bwwwwwwwwwwwwwwwb"],
+  [22, 4, ".bwwwwwwwwwwwwwb."],
+  [23, 4, "..bbcccccccccbb.."],
+  [24, 4, "....bbbbbbbbb...."],
+];
+
+const TAIL: Stamp[] = [
+  [24, 24, "cb"],
+  [25, 24, "cb"],
+  [26, 23, "cb"],
+];
+
+const FEET: Stamp[] = [
+  [28, 7, "bwwb"],
+  [29, 7, ".bb."],
+  [28, 16, "bwwb"],
+  [29, 16, ".bb."],
+];
 
 /**
- * Draws the Tomodoro at 48x48 logical pixels. The canvas is scaled up with
- * smoothing disabled, which keeps every edge a hard pixel.
+ * Draws the Tomodoro: a pink apple with a white cat face window, brown stem,
+ * green leaf, little feet and a tail. Authored on a 27x31 pixel grid
+ * (traced from the reference art) and scaled up with smoothing disabled.
  */
 export function drawPet(
   ctx: CanvasRenderingContext2D,
-  options: { band: MoodBand; alive: boolean; time: number },
+  options: { band: MoodBand; time: number },
 ) {
-  const { band, alive, time } = options
-  const pal = alive ? PALETTES[band] : GONE
+  const { band, time } = options;
+  const pal = PALETTES[band];
 
-  ctx.clearRect(0, 0, PET_SIZE, PET_SIZE)
+  ctx.clearRect(0, 0, PET_SIZE, PET_SIZE);
 
-  const bob = alive ? Math.round(Math.sin(time / 600)) : 0
-  const shake = alive && band === 'mad' ? (Math.floor(time / 140) % 2 === 0 ? 1 : 0) : 0
-  const cx = 24 + shake
-  const cy = 27 + bob
-  const rx = 15
-  const ry = 12
+  // Hop: body lifts 1px on half the cycle, feet stay planted.
+  const lift = Math.sin(time / 600) > 0 ? 0 : -1;
+  const shake = band === "mad" ? (Math.floor(time / 140) % 2 === 0 ? 1 : 0) : 0;
+  const y0 = OY + lift;
+  const ox = OX + shake;
 
-  // Ground
-  for (let x = 3; x < PET_SIZE - 3; x++) box(ctx, x, 44, 1, 3, '#291c46')
-  for (let x = 5; x < PET_SIZE - 5; x += 4) box(ctx, x, 44, 2, 1, '#3b2a60')
+  const colors = {
+    o: pal.outline,
+    b: pal.brown,
+    t: pal.tan,
+    w: pal.face,
+    c: pal.cream,
+    g: pal.leaf,
+    L: pal.leafLight,
+  };
 
-  // Shadow
-  for (let y = 41; y <= 43; y++) {
-    const half = 12 - (43 - y) * 3
-    ctx.fillStyle = 'rgba(8, 4, 18, 0.45)'
-    ctx.fillRect(cx - half, y, half * 2, 1)
-  }
+  // Feet first so the body overlaps them
+  ctx.save();
+  ctx.translate(shake, 0);
+  stamp(ctx, OY, FEET, colors);
 
-  // Body
-  const widths: number[] = []
-  for (let y = -ry; y <= ry; y++) {
-    const ratio = 1 - (y * y) / (ry * ry + 2)
-    const w = Math.round(rx * Math.sqrt(Math.max(0, ratio)))
-    widths.push(w)
-    box(ctx, cx - w, cy + y, w * 2, 1, pal.base)
-  }
+  drawBody(ctx, y0, pal);
+  stamp(ctx, y0, TAIL, colors);
+  stamp(ctx, y0, CLEFT, colors);
+  stamp(ctx, y0, STEM, colors);
+  stamp(ctx, y0, LEAF, colors);
+  stamp(ctx, y0, FACE, colors);
 
-  widths.forEach((w, index) => {
-    const y = cy - ry + index
-    box(ctx, cx + w - 3, y, 3, 1, pal.shade)
-    box(ctx, cx - w, y, 2, 1, pal.light)
-  })
+  // Face details (columns/rows are sprite coordinates)
+  const px = (c: number, r: number, w = 1, h = 1, color = pal.brown) =>
+    box(ctx, OX + c, y0 + r, w, h, color);
 
-  box(ctx, cx - 9, cy + ry - 1, 18, 1, pal.shade)
-  box(ctx, cx - 6, cy + ry - 2, 12, 1, pal.shade)
+  // Blush
+  px(6, 21, 2, 2, pal.blush);
+  px(17, 21, 2, 2, pal.blush);
 
-  // Leaf and stem
-  const topY = cy - ry
-  box(ctx, cx - 1, topY - 5, 2, 6, pal.leafDark)
-  box(ctx, cx - 6, topY - 3, 5, 2, pal.leaf)
-  box(ctx, cx + 2, topY - 3, 5, 2, pal.leaf)
-  box(ctx, cx - 3, topY - 5, 6, 2, pal.leaf)
-  box(ctx, cx - 7, topY - 1, 3, 1, pal.leafDark)
-  box(ctx, cx + 4, topY - 1, 3, 1, pal.leafDark)
-
-  // Face
-  const eyeY = cy - 2
-  const leftEye = cx - 5
-  const rightEye = cx + 2
-  const mouthY = cy + 6
-
-  if (!alive) {
-    drawCross(ctx, leftEye, eyeY - 1, pal.face)
-    drawCross(ctx, rightEye, eyeY - 1, pal.face)
-    box(ctx, cx - 2, mouthY, 5, 1, pal.face)
-  } else if (band === 'happy') {
-    const blink = time % 5200 < 150
-    if (blink) {
-      box(ctx, leftEye, eyeY + 1, 3, 1, pal.face)
-      box(ctx, rightEye, eyeY + 1, 3, 1, pal.face)
-    } else {
-      box(ctx, leftEye, eyeY - 1, 3, 4, pal.face)
-      box(ctx, rightEye, eyeY - 1, 3, 4, pal.face)
-      box(ctx, leftEye, eyeY - 1, 1, 1, '#ffffff')
-      box(ctx, rightEye, eyeY - 1, 1, 1, '#ffffff')
-    }
-    box(ctx, cx - 3, mouthY - 1, 1, 1, pal.face)
-    box(ctx, cx - 2, mouthY, 5, 1, pal.face)
-    box(ctx, cx + 3, mouthY - 1, 1, 1, pal.face)
-    box(ctx, cx - 1, mouthY + 1, 2, 1, '#ff7b8f')
-    box(ctx, cx - 10, mouthY - 2, 2, 1, pal.cheek)
-    box(ctx, cx + 8, mouthY - 2, 2, 1, pal.cheek)
-  } else if (band === 'bored') {
-    const blink = time % 6100 < 150
-    if (blink) {
-      box(ctx, leftEye, eyeY + 1, 3, 1, pal.face)
-      box(ctx, rightEye, eyeY + 1, 3, 1, pal.face)
-    } else {
-      box(ctx, leftEye, eyeY, 3, 2, pal.face)
-      box(ctx, rightEye, eyeY, 3, 2, pal.face)
-      box(ctx, leftEye - 1, eyeY - 1, 5, 1, pal.shade)
-      box(ctx, rightEye - 1, eyeY - 1, 5, 1, pal.shade)
-    }
-    box(ctx, cx - 2, mouthY, 5, 1, pal.face)
+  if (band === "happy") {
+    px(7, 20, 2, 2); // eyes
+    px(16, 20, 2, 2);
+    px(10, 21); // zigzag mouth
+    px(12, 21);
+    px(14, 21);
+    px(11, 22);
+    px(13, 22);
+  } else if (band === "bored") {
+    px(7, 21, 2, 1); // half-closed eyes
+    px(16, 21, 2, 1);
+    px(11, 22, 3, 1); // flat mouth
   } else {
-    box(ctx, leftEye - 1, eyeY, 3, 2, pal.face)
-    box(ctx, rightEye + 1, eyeY, 3, 2, pal.face)
-    box(ctx, leftEye - 2, eyeY - 2, 4, 1, pal.face)
-    box(ctx, leftEye + 1, eyeY - 1, 2, 1, pal.face)
-    box(ctx, rightEye, eyeY - 2, 4, 1, pal.face)
-    box(ctx, cx - 2, mouthY - 1, 5, 1, pal.face)
-    box(ctx, cx - 3, mouthY, 1, 1, pal.face)
-    box(ctx, cx + 3, mouthY, 1, 1, pal.face)
-
-    // Steam
-    const rise = Math.floor(time / 260) % 5
-    box(ctx, cx - 13, cy - ry - 5 - rise, 2, 2, '#c7b7ff')
-    box(ctx, cx + 11, cy - ry - 3 - ((rise + 2) % 5), 2, 2, '#c7b7ff')
-    box(ctx, cx - 11, cy - ry - 1 - ((rise + 3) % 4), 1, 1, '#e2d8ff')
+    px(7, 20, 2, 2); // eyes
+    px(16, 20, 2, 2);
+    px(6, 18, 2, 1); // angry brows
+    px(8, 19, 2, 1);
+    px(17, 18, 2, 1);
+    px(15, 19, 2, 1);
+    px(11, 21, 3, 1); // frown
+    px(10, 22);
+    px(14, 22);
   }
+  ctx.restore();
 
-  if (alive) {
-    if (band === 'happy') {
-      const phase = Math.floor(time / 380) % 4
-      const sparkles: Array<[number, number]> = [
-        [7, 14],
-        [40, 10],
-        [6, 31],
-        [41, 27],
-      ]
-      sparkles.forEach(([x, y], index) => {
-        if ((phase + index) % 4 !== 0) return
-        box(ctx, x, y, 1, 1, '#ffe98a')
-        box(ctx, x - 1, y, 1, 1, '#ffe98a')
-        box(ctx, x + 1, y, 1, 1, '#ffe98a')
-        box(ctx, x, y - 1, 1, 1, '#fff8cf')
-        box(ctx, x, y + 1, 1, 1, '#fff8cf')
-      })
-    } else if (band === 'bored') {
-      const drift = Math.floor(time / 900) % 6
-      drawZ(ctx, cx + 13, 8 + drift, '#9f8cff')
-    }
+  // Mood effects
+  if (band === "happy") {
+    const phase = Math.floor(time / 380) % 4;
+    const sparkles: Array<[number, number]> = [
+      [5, 14],
+      [42, 18],
+      [4, 28],
+      [43, 36],
+    ];
+    sparkles.forEach(([x, y], index) => {
+      if ((phase + index) % 4 !== 0) return;
+      box(ctx, x, y, 1, 1, "#fff0a8");
+      box(ctx, x - 1, y, 1, 1, "#ffe98a");
+      box(ctx, x + 1, y, 1, 1, "#ffe98a");
+      box(ctx, x, y - 1, 1, 1, "#fffbe0");
+      box(ctx, x, y + 1, 1, 1, "#fffbe0");
+    });
+  } else if (band === "bored") {
+    const drift = Math.floor(time / 900) % 6;
+    const zx = ox + 26;
+    const zy = 4 + drift;
+    box(ctx, zx, zy, 3, 1, "#9f8cff");
+    box(ctx, zx + 1, zy + 1, 1, 1, "#9f8cff");
+    box(ctx, zx, zy + 2, 3, 1, "#9f8cff");
+  } else {
+    const rise = Math.floor(time / 260) % 5;
+    box(ctx, ox - 4, 18 - rise, 2, 2, "#c7b7ff");
+    box(ctx, ox + 30, 20 - ((rise + 2) % 5), 2, 2, "#c7b7ff");
+    box(ctx, ox - 2, 14 - ((rise + 3) % 4), 1, 1, "#e2d8ff");
   }
 }
