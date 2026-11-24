@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { LEAVING_MOOD, moodBand } from '../game/engine'
 import { drawPet, PET_SCALE, PET_SIZE } from '../game/sprite'
 import type { SessionStatus } from '../game/types'
 
 interface PetStageProps {
+  name: string
+  onRename: (name: string) => void
   mood: number
   alive: boolean
   toast: string | null
@@ -46,8 +48,28 @@ function bubbleLine(props: PetStageProps, band: ReturnType<typeof moodBand>): st
 
 export function PetStage(props: PetStageProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(props.name)
+  const cancelled = useRef(false)
   const band = moodBand(props.mood)
   const line = bubbleLine(props, band)
+
+  const startEditing = () => {
+    cancelled.current = false
+    setDraft(props.name)
+    setEditing(true)
+  }
+
+  const commitName = () => {
+    if (cancelled.current) {
+      cancelled.current = false
+      setEditing(false)
+      return
+    }
+    const next = draft.trim().replace(/\s+/g, ' ').slice(0, 18)
+    if (next) props.onRename(next)
+    setEditing(false)
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -69,9 +91,54 @@ export function PetStage(props: PetStageProps) {
   }, [band])
 
   return (
-    <div className={`stage band-${props.alive ? band : 'gone'} ${props.noNoLabel ? 'alert' : ''}`}>
-      <div className="stage-stars" aria-hidden="true" />
-      {props.alive && <div className="bubble">{line}</div>}
+    <>
+      <div className="pet-name-bar">
+        {editing ? (
+          <form
+            className="name-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              commitName()
+            }}
+          >
+            <input
+              autoFocus
+              value={draft}
+              maxLength={18}
+              aria-label="Tomodoro nickname"
+              placeholder="Nickname"
+              onChange={(event) => setDraft(event.target.value)}
+              onBlur={commitName}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  cancelled.current = true
+                  setEditing(false)
+                }
+              }}
+            />
+            <button type="submit" className="btn small">
+              SAVE
+            </button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            className="pet-name"
+            onClick={startEditing}
+            title="Click to give your Tomodoro a nickname"
+          >
+            <span className="pet-name-label">NAME</span>
+            <span className="pet-name-value">{props.name}</span>
+            <span className="pet-name-edit" aria-hidden="true">
+              edit
+            </span>
+          </button>
+        )}
+      </div>
+
+      <div className={`stage band-${props.alive ? band : 'gone'} ${props.noNoLabel ? 'alert' : ''}`}>
+              <div className="stage-stars" aria-hidden="true" />
+        {props.alive && <div className="bubble">{line}</div>}
 
       {props.alive && (
         <canvas
@@ -95,6 +162,7 @@ export function PetStage(props: PetStageProps) {
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

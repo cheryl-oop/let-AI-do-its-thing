@@ -2,11 +2,71 @@ import { moodBand } from './engine'
 import type { CareItem, GameData, Session, Settings } from './types'
 
 export const FRUITS: CareItem[] = [
-  { id: 'berry', name: 'Berry', icon: 'berry', cost: 15, mood: 7, note: 'A tiny tart snack.' },
-  { id: 'apple', name: 'Apple', icon: 'apple', cost: 30, mood: 11, note: 'Crisp and reliable.' },
-  { id: 'cherry', name: 'Cherries', icon: 'cherry', cost: 45, mood: 16, note: 'A sweet little pair.' },
-  { id: 'melon', name: 'Melon', icon: 'melon', cost: 70, mood: 22, note: 'Juicy and refreshing.' },
-  { id: 'starfruit', name: 'Star Fruit', icon: 'starfruit', cost: 110, mood: 32, note: 'Rare. Slightly magical.' },
+  {
+    id: 'berry',
+    name: 'Berry',
+    icon: 'berry',
+    cost: 15,
+    mood: 7,
+    note: 'A tiny tart snack.',
+    reactions: {
+      happy: 'A berry! Tiny, but it is mine!',
+      bored: 'A berry. One whole berry. Thanks.',
+      mad: 'A berry? Do I look like a bird?',
+    },
+  },
+  {
+    id: 'apple',
+    name: 'Apple',
+    icon: 'apple',
+    cost: 30,
+    mood: 11,
+    note: 'Crisp and reliable.',
+    reactions: {
+      happy: 'An apple! Crunchy and perfect!',
+      bored: 'An apple. Fine. Thanks.',
+      mad: 'An apple? Better than another berry, I suppose.',
+    },
+  },
+  {
+    id: 'cherry',
+    name: 'Cherries',
+    icon: 'cherry',
+    cost: 45,
+    mood: 16,
+    note: 'A sweet little pair.',
+    reactions: {
+      happy: 'Cherries! Two of them! One for each cheek!',
+      bored: 'Cherries. Two is nicer than one, I guess.',
+      mad: 'Cherries. Are you trying to bribe me one fruit at a time?',
+    },
+  },
+  {
+    id: 'melon',
+    name: 'Melon',
+    icon: 'melon',
+    cost: 70,
+    mood: 22,
+    note: 'Juicy and refreshing.',
+    reactions: {
+      happy: 'Melon! It is like a swimming pool for my face!',
+      bored: 'Melon. That is a lot of melon.',
+      mad: 'A melon? Are you trying to bury me in fruit?',
+    },
+  },
+  {
+    id: 'starfruit',
+    name: 'Star Fruit',
+    icon: 'starfruit',
+    cost: 110,
+    mood: 32,
+    note: 'Rare. Slightly magical.',
+    reactions: {
+      happy: 'Star fruit! I am holding a tiny star!',
+      bored: 'Star fruit. Rare. Still just fruit.',
+      mad: 'Star fruit? Shiny does not fix anything.',
+    },
+  },
 ]
 
 export const GIFTS: CareItem[] = [

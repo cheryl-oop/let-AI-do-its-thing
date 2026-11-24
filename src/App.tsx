@@ -18,6 +18,7 @@ export default function App() {
   const session = useGame((state) => state.session)
   const settings = useGame((state) => state.settings)
   const adopt = useGame((state) => state.adopt)
+  const rename = useGame((state) => state.rename)
 
   const [tab, setTab] = useState<Tab>('care')
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null)
@@ -150,6 +151,8 @@ export default function App() {
       <main className="layout">
         <section className="stage-col">
           <PetStage
+            name={pet.name}
+            onRename={rename}
             mood={pet.mood}
             alive={pet.alive}
             toast={toast ? toast.text : null}

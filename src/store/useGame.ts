@@ -19,6 +19,7 @@ interface GameActions {
   resumeSession: () => void
   abandonSession: () => void
   care: (itemId: string) => ActionResult
+  rename: (name: string) => void
   adopt: () => void
   addNoNo: (kind: NoNoKind, value: string) => ActionResult
   removeNoNo: (kind: NoNoKind, value: string) => void
@@ -167,6 +168,17 @@ export const useGame = create<GameStore>()(
         })
 
         return { ok: true, message: `${item.name}  mood +${Math.round(raised)}`, reaction }
+      },
+
+      rename: (name) => {
+        const state = get()
+        const trimmed = name.trim().replace(/\s+/g, ' ').slice(0, 18)
+        if (!trimmed || trimmed === state.pet.name) return
+        const now = Date.now()
+        set({
+          pet: { ...state.pet, name: trimmed },
+          log: addLog(state.log, `Your Tomodoro is now called ${trimmed}.`, 'info', now),
+        })
       },
 
       adopt: () => {

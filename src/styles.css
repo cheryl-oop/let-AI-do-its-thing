@@ -222,6 +222,76 @@ button {
   min-height: 0;
 }
 
+/* ---------- Pet name plate ---------- */
+
+.pet-name-bar {
+  display: flex;
+  justify-content: center;
+}
+
+.pet-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 8px 14px;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--ink);
+  background: #fff4f8;
+  border: 3px solid var(--edge);
+  box-shadow: var(--pixel-drop);
+  cursor: pointer;
+}
+
+.pet-name:hover {
+  background: #ffeaf2;
+}
+
+.pet-name-label {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #a0707e;
+}
+
+.pet-name-value {
+  overflow: hidden;
+  max-width: 190px;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pet-name-edit {
+  font-family: 'VT323', monospace;
+  font-size: 15px;
+  color: #a0707e;
+}
+
+.name-form {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.name-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  color: var(--text);
+  background: #fff8fb;
+  border: 3px solid var(--edge);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.4);
+  outline: none;
+}
+
+.name-form input:focus {
+  border-color: var(--cyan);
+}
+
 .side {
   display: flex;
   flex-direction: column;
