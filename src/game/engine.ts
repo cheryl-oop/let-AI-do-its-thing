@@ -161,6 +161,7 @@ export function step(state: GameData, ctx: TickContext): GameData {
   if (session.status === "paused" && session.autoPaused && onTask) {
     session.status = "running";
     session.autoPaused = false;
+    session.pauseReason = undefined;
     session.awaySeconds = 0;
     session.noNoSeconds = 0;
     log = addLog(
@@ -185,12 +186,18 @@ export function step(state: GameData, ctx: TickContext): GameData {
     }
 
     if (noNo.hit && session.noNoSeconds >= 2.5) {
-      session.status = "broken";
-      session.breakReason = `no-no app: ${noNo.label}`;
+      // A no-no app pauses the session instead of destroying it: the clock
+      // stops until you close it and come back to your work.
+      session.status = "paused";
+      session.autoPaused = true;
+      session.pauseReason = "noNo";
+      session.breakReason = null;
+      session.noNoSeconds = 0;
+      session.awaySeconds = 0;
       pet.mood -= 16;
       log = addLog(
         log,
-        `Session broken — you opened ${noNo.label}. Mood -16.`,
+        `Session paused — you opened ${noNo.label}. Mood -16. Close it to carry on.`,
         "bad",
         now,
       );
@@ -198,6 +205,7 @@ export function step(state: GameData, ctx: TickContext): GameData {
       // Leaving pauses the session instead of destroying it.
       session.status = "paused";
       session.autoPaused = true;
+      session.pauseReason = "away";
       session.breakReason = null;
       session.awaySeconds = 0;
       log = addLog(log, "You left — session paused!", "info", now);

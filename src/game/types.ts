@@ -50,6 +50,8 @@ export interface Session {
   breakReason: string | null
   /** True when the session paused itself because the pet was left alone. */
   autoPaused: boolean
+  /** Why an automatic pause happened: leaving the app or opening a no-no. */
+  pauseReason?: 'away' | 'noNo'
 }
 
 export interface Settings {

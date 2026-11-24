@@ -103,6 +103,11 @@ export default function App() {
 
     setPetBurst((burst) => burst + 1)
     setPetComment(petLine(pet.mood))
+    if (result.moodGained > 0) {
+      setToast({ text: `Pet · mood +${result.moodGained}`, ok: true })
+      if (toastTimer.current) window.clearTimeout(toastTimer.current)
+      toastTimer.current = window.setTimeout(() => setToast(null), 2000)
+    }
     if (petTimer.current) window.clearTimeout(petTimer.current)
     petTimer.current = window.setTimeout(() => setPetComment(null), 3500)
   }

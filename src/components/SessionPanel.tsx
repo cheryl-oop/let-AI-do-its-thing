@@ -94,7 +94,9 @@ export function SessionPanel({ statusLabel, tone }: { statusLabel: string; tone:
       {session.status === 'paused' && (
         <p className="session-note">
           {session.autoPaused
-            ? 'You left — why did you leave me! It resumes on its own when you are back.'
+            ? session.pauseReason === 'noNo'
+              ? 'No-no app — session paused. Close it and the session resumes on its own.'
+              : 'You left — why did you leave me! It resumes on its own when you are back.'
             : 'Paused. No points while paused.'}
         </p>
       )}

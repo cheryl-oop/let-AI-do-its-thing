@@ -19,7 +19,7 @@ interface GameActions {
   resumeSession: () => void
   abandonSession: () => void
   care: (itemId: string) => ActionResult
-  petTomodoro: () => { ok: boolean; gained: number }
+  petTomodoro: () => { ok: boolean; gained: number; moodGained: number }
   rename: (name: string) => void
   adopt: () => void
   addNoNo: (kind: NoNoKind, value: string) => ActionResult
@@ -32,6 +32,13 @@ export type GameStore = GameData & GameActions
 /** Petting is a small, rate-limited trickle of points so it cannot replace focus. */
 const PET_FP = 2
 const PET_COOLDOWN_MS = 3000
+/**
+ * Mood from petting is deliberately slow: 1 point per 90s roughly offsets the
+ * baseline 0.35/min decay, but never the neglect steps, and one berry (7 mood)
+ * is still far faster than an hour of petting.
+ */
+const PET_MOOD = 1
+const PET_MOOD_COOLDOWN_MS = 90_000
 
 const initial = createInitialData()
 
@@ -73,6 +80,7 @@ export const useGame = create<GameStore>()(
         if (session.status === 'running') {
           session.status = 'paused'
           session.autoPaused = true
+          session.pauseReason = 'away'
           session.breakReason = null
           session.awaySeconds = 0
           log = addLog(log, 'Tomodoro was closed — session paused. Why did you leave me!', 'info', now)
@@ -114,7 +122,13 @@ export const useGame = create<GameStore>()(
         const state = get()
         if (state.session.status !== 'running') return
         set({
-          session: { ...state.session, status: 'paused', autoPaused: false, awaySeconds: 0 },
+          session: {
+            ...state.session,
+            status: 'paused',
+            autoPaused: false,
+            pauseReason: undefined,
+            awaySeconds: 0,
+          },
           log: addLog(state.log, 'Session paused. No points while paused.', 'info', Date.now()),
         })
       },
@@ -127,6 +141,7 @@ export const useGame = create<GameStore>()(
             ...state.session,
             status: 'running',
             autoPaused: false,
+            pauseReason: undefined,
             awaySeconds: 0,
             noNoSeconds: 0,
           },
@@ -178,18 +193,27 @@ export const useGame = create<GameStore>()(
       petTomodoro: () => {
         const state = get()
         const now = Date.now()
-        if (!state.pet.alive) return { ok: false, gained: 0 }
-        if (now - (state.pet.lastPetAt ?? 0) < PET_COOLDOWN_MS) return { ok: true, gained: 0 }
+        if (!state.pet.alive) return { ok: false, gained: 0, moodGained: 0 }
+
+        const canEarn = now - (state.pet.lastPetAt ?? 0) >= PET_COOLDOWN_MS
+        const canCheer = now - (state.pet.lastPetMoodAt ?? 0) >= PET_MOOD_COOLDOWN_MS
+        if (!canEarn && !canCheer) return { ok: true, gained: 0, moodGained: 0 }
 
         set({
           pet: {
             ...state.pet,
-            points: state.pet.points + PET_FP,
-            lastPetAt: now,
+            points: state.pet.points + (canEarn ? PET_FP : 0),
+            mood: Math.min(100, state.pet.mood + (canCheer ? PET_MOOD : 0)),
+            lastPetAt: canEarn ? now : state.pet.lastPetAt,
+            lastPetMoodAt: canCheer ? now : state.pet.lastPetMoodAt,
           },
         })
 
-        return { ok: true, gained: PET_FP }
+        return {
+          ok: true,
+          gained: canEarn ? PET_FP : 0,
+          moodGained: canCheer ? PET_MOOD : 0,
+        }
       },
 
       rename: (name) => {
