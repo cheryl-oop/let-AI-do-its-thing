@@ -31,8 +31,9 @@ export function NoNoPanel({
   return (
     <div className="nono">
       <p className="hint">
-        Apps match the foreground process name, sites match the window title. While one is in
-        front, mood drains fast and a running session breaks.
+        {tracking
+          ? 'Apps match the foreground process name, sites match the window title. While one is in front, mood drains fast and a running session pauses.'
+          : 'No-no detection needs the desktop app: a browser cannot read which app or site is in front, so these lists are read-only here.'}
       </p>
 
       <div className={`watching ${noNo.hit ? 'hit' : ''}`}>
@@ -65,26 +66,34 @@ export function NoNoPanel({
             SITE
           </button>
         </div>
-        <input
-          type="text"
-          value={value}
-          maxLength={48}
-          spellCheck={false}
-          placeholder={kind === 'app' ? 'discord, steam, tiktok' : 'youtube, reddit, netflix'}
-          onChange={(event) => {
-            setValue(event.target.value)
-            setError(null)
-          }}
-        />
-        <button type="submit" className="btn small">
-          ADD
-        </button>
+        {tracking ? (
+          <>
+            <input
+              type="text"
+              value={value}
+              maxLength={48}
+              spellCheck={false}
+              placeholder={kind === 'app' ? 'discord, steam, tiktok' : 'youtube, reddit, netflix'}
+              onChange={(event) => {
+                setValue(event.target.value)
+                setError(null)
+              }}
+            />
+            <button type="submit" className="btn small">
+              ADD
+            </button>
+          </>
+        ) : (
+          <span className="nono-readonly">read-only in the browser demo</span>
+        )}
       </form>
-      {error && <p className="form-error">{error}</p>}
+      {tracking && error && <p className="form-error">{error}</p>}
 
       <h3 className="section-title">{kind === 'app' ? 'NO-NO APPS' : 'NO-NO SITES'}</h3>
       {list.length === 0 ? (
-        <p className="empty">Nothing here yet. Add the things that steal your focus.</p>
+        <p className="empty">
+          {tracking ? 'Nothing here yet. Add the things that steal your focus.' : 'Nothing on this list.'}
+        </p>
       ) : (
         <ul className="nono-list">
           {list.map((entry) => {
@@ -92,13 +101,15 @@ export function NoNoPanel({
             return (
               <li key={entry} className={active ? 'active' : ''}>
                 <span>{entry}</span>
-                <button
-                  type="button"
-                  aria-label={`Remove ${entry}`}
-                  onClick={() => removeNoNo(kind, entry)}
-                >
-                  ×
-                </button>
+                {tracking && (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${entry}`}
+                    onClick={() => removeNoNo(kind, entry)}
+                  >
+                    ×
+                  </button>
+                )}
               </li>
             )
           })}

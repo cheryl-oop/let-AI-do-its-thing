@@ -170,6 +170,14 @@ export default function App() {
         </div>
       </header>
 
+      {!hasApi && (
+        <div className="web-note" role="note">
+          <span className="web-note-tag">BROWSER DEMO</span>
+          No-no apps &amp; sites, idle detection and the PIN button only work in the
+          desktop app.
+        </div>
+      )}
+
       <main className="layout">
         <section className="stage-col">
           <PetStage
