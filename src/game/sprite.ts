@@ -2,7 +2,6 @@ import type { MoodBand } from "./types";
 export const PET_SIZE = 36;
 export const PET_SCALE = 8;
 
-/** The sprite itself is 27x30 logical pixels, near the top of the canvas. */
 const OX = 5;
 const OY = 3;
 
