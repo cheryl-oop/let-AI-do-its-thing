@@ -93,7 +93,7 @@ export interface CareItem {
   note: string
   gift?: boolean
   /** What the pet says when given this item, by mood band. */
-  reactions?: Record<MoodBand, string>
+  reactions: Record<MoodBand, string>
 }
 
 export interface NoNoMatch {

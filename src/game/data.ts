@@ -143,8 +143,7 @@ export const GIFTS: CareItem[] = [
 ]
 
 /** The line the pet says when handed an item, coloured by how it felt beforehand. */
-export function reactionFor(item: CareItem, mood: number): string | null {
-  if (!item.reactions) return null
+export function reactionFor(item: CareItem, mood: number): string {
   return item.reactions[moodBand(mood)]
 }
 
@@ -164,8 +163,6 @@ export function petLine(mood: number): string {
   const lines = PET_LINES[moodBand(mood)]
   return lines[Math.floor(Math.random() * lines.length)]
 }
-
-
 
 export const ALL_ITEMS: CareItem[] = [...FRUITS, ...GIFTS]
 

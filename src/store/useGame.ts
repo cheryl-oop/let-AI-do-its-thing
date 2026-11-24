@@ -7,8 +7,8 @@ import type { GameData, NoNoKind, TickContext } from '../game/types'
 export interface ActionResult {
   ok: boolean
   message: string
-  /** What the pet says back, e.g. a gift reaction. */
-  reaction?: string | null
+  /** What the pet says back, e.g. a fruit or gift reaction. */
+  reaction?: string
 }
 
 interface GameActions {
@@ -19,7 +19,7 @@ interface GameActions {
   resumeSession: () => void
   abandonSession: () => void
   care: (itemId: string) => ActionResult
-  petTomodoro: () => { ok: boolean; gained: number; moodGained: number }
+  petTomodoro: () => { ok: boolean; moodGained: number }
   rename: (name: string) => void
   adopt: () => void
   addNoNo: (kind: NoNoKind, value: string) => ActionResult
@@ -29,13 +29,12 @@ interface GameActions {
 
 export type GameStore = GameData & GameActions
 
-/** Petting is a small, rate-limited trickle of points so it cannot replace focus. */
+/** Petting is a small trickle so it cannot replace focus: 2 FP every 3s. */
 const PET_FP = 2
-const PET_COOLDOWN_MS = 3000
+const PET_FP_COOLDOWN_MS = 3000
 /**
- * Mood from petting is deliberately slow: 1 point per 90s roughly offsets the
- * baseline 0.35/min decay, but never the neglect steps, and one berry (7 mood)
- * is still far faster than an hour of petting.
+ * Mood from petting is much slower: +1 per 90s roughly offsets baseline decay
+ * but never the neglect steps, and one berry (7 mood) still beats an hour of it.
  */
 const PET_MOOD = 1
 const PET_MOOD_COOLDOWN_MS = 90_000
@@ -193,27 +192,24 @@ export const useGame = create<GameStore>()(
       petTomodoro: () => {
         const state = get()
         const now = Date.now()
-        if (!state.pet.alive) return { ok: false, gained: 0, moodGained: 0 }
+        if (!state.pet.alive) return { ok: false, moodGained: 0 }
 
-        const canEarn = now - (state.pet.lastPetAt ?? 0) >= PET_COOLDOWN_MS
-        const canCheer = now - (state.pet.lastPetMoodAt ?? 0) >= PET_MOOD_COOLDOWN_MS
-        if (!canEarn && !canCheer) return { ok: true, gained: 0, moodGained: 0 }
+        const earnPoints = now - (state.pet.lastPetAt ?? 0) >= PET_FP_COOLDOWN_MS
+        const cheerUp = now - (state.pet.lastPetMoodAt ?? 0) >= PET_MOOD_COOLDOWN_MS
+        if (!earnPoints && !cheerUp) return { ok: true, moodGained: 0 }
 
-        set({
-          pet: {
-            ...state.pet,
-            points: state.pet.points + (canEarn ? PET_FP : 0),
-            mood: Math.min(100, state.pet.mood + (canCheer ? PET_MOOD : 0)),
-            lastPetAt: canEarn ? now : state.pet.lastPetAt,
-            lastPetMoodAt: canCheer ? now : state.pet.lastPetMoodAt,
-          },
-        })
-
-        return {
-          ok: true,
-          gained: canEarn ? PET_FP : 0,
-          moodGained: canCheer ? PET_MOOD : 0,
+        const pet = { ...state.pet }
+        if (earnPoints) {
+          pet.points += PET_FP
+          pet.lastPetAt = now
         }
+        if (cheerUp) {
+          pet.mood = Math.min(100, pet.mood + PET_MOOD)
+          pet.lastPetMoodAt = now
+        }
+
+        set({ pet })
+        return { ok: true, moodGained: cheerUp ? PET_MOOD : 0 }
       },
 
       rename: (name) => {

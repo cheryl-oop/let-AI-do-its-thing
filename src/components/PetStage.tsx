@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { LEAVING_MOOD, moodBand } from '../game/engine'
 import { drawPet, PET_SCALE, PET_SIZE } from '../game/sprite'
-import type { SessionStatus } from '../game/types'
+import type { MoodBand, SessionStatus } from '../game/types'
 
 interface PetStageProps {
   name: string
@@ -20,34 +20,34 @@ interface PetStageProps {
   onAdopt: () => void
 }
 
-const HAPPY_LINES = ['Focus! Focus! I love this.', 'Look at us go!', 'We are doing so well!']
-const BORED_LINES = ['Kinda bored… got a snack?', 'Snack? Snack?', 'This is fine. I guess.']
-const MAD_LINES = ['I am SO mad right now.', 'You are on thin ice.', 'Feed me. NOW.']
-const IDLE_HAPPY = ['Hi! Ready to study?', 'Let us earn some points!', 'Best day ever.']
-const IDLE_BORED = ['Nothing to do…', 'Feed me a fruit?', 'I could use a gift.']
-const IDLE_MAD = ['Hmph.', 'You forgot about me.', 'Not talking to you.']
+const FOCUS_LINES: Record<MoodBand, string[]> = {
+  happy: ['Focus! Focus! I love this.', 'Look at us go!', 'We are doing so well!'],
+  bored: ['Kinda bored… got a snack?', 'Snack? Snack?', 'This is fine. I guess.'],
+  mad: ['I am SO mad right now.', 'You are on thin ice.', 'Feed me. NOW.'],
+}
+
+const IDLE_LINES: Record<MoodBand, string[]> = {
+  happy: ['Hi! Ready to study?', 'Let us earn some points!', 'Best day ever.'],
+  bored: ['Nothing to do…', 'Feed me a fruit?', 'I could use a gift.'],
+  mad: ['Hmph.', 'You forgot about me.', 'Not talking to you.'],
+}
 
 function pick(lines: string[]): string {
   return lines[Math.floor(Date.now() / 7000) % lines.length]
 }
 
-function bubbleLine(props: PetStageProps, band: ReturnType<typeof moodBand>): string {
-  if (!props.alive) return 'I waited as long as I could…'
+function bubbleLine(props: PetStageProps, band: MoodBand): string {
   if (props.petComment) return props.petComment
   if (props.reaction) return props.reaction
   if (props.mood <= LEAVING_MOOD) return "That's it! I'm leaving!"
   if (props.noNoLabel) return `No-no app: ${props.noNoLabel} >:(`
   if (props.sessionStatus === 'running') {
     if (props.awaySeconds > 0) return 'Why did you leave me!'
-    if (band === 'happy') return pick(HAPPY_LINES)
-    if (band === 'bored') return pick(BORED_LINES)
-    return pick(MAD_LINES)
+    return pick(FOCUS_LINES[band])
   }
   if (props.sessionStatus === 'paused') return 'Why did you leave me!'
   if (props.sessionStatus === 'broken') return 'You broke it. I felt that.'
-  if (band === 'happy') return pick(IDLE_HAPPY)
-  if (band === 'bored') return pick(IDLE_BORED)
-  return pick(IDLE_MAD)
+  return pick(IDLE_LINES[band])
 }
 
 export function PetStage(props: PetStageProps) {

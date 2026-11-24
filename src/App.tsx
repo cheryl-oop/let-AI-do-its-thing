@@ -97,26 +97,27 @@ export default function App() {
     tone = 'bad'
   }
 
+  const flashToast = (text: string, ok: boolean, duration = 2400) => {
+    setToast({ text, ok })
+    if (toastTimer.current) window.clearTimeout(toastTimer.current)
+    toastTimer.current = window.setTimeout(() => setToast(null), duration)
+  }
+
   const handlePet = () => {
     const result = useGame.getState().petTomodoro()
     if (!result.ok) return
 
     setPetBurst((burst) => burst + 1)
     setPetComment(petLine(pet.mood))
-    if (result.moodGained > 0) {
-      setToast({ text: `Pet · mood +${result.moodGained}`, ok: true })
-      if (toastTimer.current) window.clearTimeout(toastTimer.current)
-      toastTimer.current = window.setTimeout(() => setToast(null), 2000)
-    }
+    if (result.moodGained > 0) flashToast(`Pet · mood +${result.moodGained}`, true, 2000)
+
     if (petTimer.current) window.clearTimeout(petTimer.current)
     petTimer.current = window.setTimeout(() => setPetComment(null), 3500)
   }
 
   const handleCare = (itemId: string) => {
     const result = useGame.getState().care(itemId)
-    setToast({ text: result.message, ok: result.ok })
-    if (toastTimer.current) window.clearTimeout(toastTimer.current)
-    toastTimer.current = window.setTimeout(() => setToast(null), 2400)
+    flashToast(result.message, result.ok)
 
     if (result.ok && result.reaction) {
       setPetComment(null)
