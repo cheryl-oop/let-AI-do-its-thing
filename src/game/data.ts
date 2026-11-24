@@ -1,5 +1,5 @@
 import { moodBand } from './engine'
-import type { CareItem, GameData, Session, Settings } from './types'
+import type { CareItem, GameData, MoodBand, Session, Settings } from './types'
 
 export const FRUITS: CareItem[] = [
   {
@@ -146,6 +146,23 @@ export const GIFTS: CareItem[] = [
 export function reactionFor(item: CareItem, mood: number): string | null {
   if (!item.reactions) return null
   return item.reactions[moodBand(mood)]
+}
+
+const PET_LINES: Record<MoodBand, string[]> = {
+  happy: ['Yay! More pets!', 'Hehe, that tickles!', 'Purr. Do that again.', 'Best human!'],
+  bored: ['Finally, attention!', 'Oh! A pet. Nice.', 'I was waiting for that.', 'Hmm. Keep going.'],
+  mad: [
+    '...Fine. One pet.',
+    'Hmph. You remembered me.',
+    'Do not think this fixes everything.',
+    'Petting me now? Bold.',
+  ],
+}
+
+/** A short comment for being petted, coloured by current mood. */
+export function petLine(mood: number): string {
+  const lines = PET_LINES[moodBand(mood)]
+  return lines[Math.floor(Math.random() * lines.length)]
 }
 
 

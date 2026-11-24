@@ -19,6 +19,7 @@ interface GameActions {
   resumeSession: () => void
   abandonSession: () => void
   care: (itemId: string) => ActionResult
+  petTomodoro: () => { ok: boolean; gained: number }
   rename: (name: string) => void
   adopt: () => void
   addNoNo: (kind: NoNoKind, value: string) => ActionResult
@@ -27,6 +28,10 @@ interface GameActions {
 }
 
 export type GameStore = GameData & GameActions
+
+/** Petting is a small, rate-limited trickle of points so it cannot replace focus. */
+const PET_FP = 2
+const PET_COOLDOWN_MS = 3000
 
 const initial = createInitialData()
 
@@ -168,6 +173,23 @@ export const useGame = create<GameStore>()(
         })
 
         return { ok: true, message: `${item.name}  mood +${Math.round(raised)}`, reaction }
+      },
+
+      petTomodoro: () => {
+        const state = get()
+        const now = Date.now()
+        if (!state.pet.alive) return { ok: false, gained: 0 }
+        if (now - (state.pet.lastPetAt ?? 0) < PET_COOLDOWN_MS) return { ok: true, gained: 0 }
+
+        set({
+          pet: {
+            ...state.pet,
+            points: state.pet.points + PET_FP,
+            lastPetAt: now,
+          },
+        })
+
+        return { ok: true, gained: PET_FP }
       },
 
       rename: (name) => {

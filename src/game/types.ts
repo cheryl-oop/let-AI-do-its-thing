@@ -33,6 +33,10 @@ export interface Pet {
   timesLeft: number
   /** True once the pet has warned that it is about to leave. */
   leaveWarned: boolean
+  /** Last time the pet was petted, used to throttle the FP it gives. */
+  lastPetAt?: number
+  /** Last time petting actually nudged mood, throttled separately and slower. */
+  lastPetMoodAt?: number
 }
 
 export interface Session {

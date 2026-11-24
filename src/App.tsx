@@ -5,6 +5,7 @@ import { MoodMeter } from './components/MoodMeter'
 import { NoNoPanel } from './components/NoNoPanel'
 import { PetStage } from './components/PetStage'
 import { SessionPanel, type Tone } from './components/SessionPanel'
+import { petLine } from './game/data'
 import { BASE_FP_PER_SECOND, matchNoNo, moodBand, moodMultiplier } from './game/engine'
 import { useActivity } from './hooks/useActivity'
 import { useGame } from './store/useGame'
@@ -23,10 +24,13 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('care')
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null)
   const [reaction, setReaction] = useState<string | null>(null)
+  const [petComment, setPetComment] = useState<string | null>(null)
+  const [petBurst, setPetBurst] = useState(0)
   const [pinned, setPinned] = useState(false)
 
   const toastTimer = useRef<number | null>(null)
   const reactionTimer = useRef<number | null>(null)
+  const petTimer = useRef<number | null>(null)
   const ctxRef = useRef({ activity, focused, idleSeconds })
   ctxRef.current = { activity, focused, idleSeconds }
 
@@ -54,6 +58,7 @@ export default function App() {
     return () => {
       if (toastTimer.current) window.clearTimeout(toastTimer.current)
       if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
+      if (petTimer.current) window.clearTimeout(petTimer.current)
     }
   }, [])
 
@@ -92,6 +97,16 @@ export default function App() {
     tone = 'bad'
   }
 
+  const handlePet = () => {
+    const result = useGame.getState().petTomodoro()
+    if (!result.ok) return
+
+    setPetBurst((burst) => burst + 1)
+    setPetComment(petLine(pet.mood))
+    if (petTimer.current) window.clearTimeout(petTimer.current)
+    petTimer.current = window.setTimeout(() => setPetComment(null), 3500)
+  }
+
   const handleCare = (itemId: string) => {
     const result = useGame.getState().care(itemId)
     setToast({ text: result.message, ok: result.ok })
@@ -99,6 +114,7 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), 2400)
 
     if (result.ok && result.reaction) {
+      setPetComment(null)
       setReaction(result.reaction)
       if (reactionTimer.current) window.clearTimeout(reactionTimer.current)
       reactionTimer.current = window.setTimeout(() => setReaction(null), 6000)
@@ -153,6 +169,9 @@ export default function App() {
           <PetStage
             name={pet.name}
             onRename={rename}
+            onPet={handlePet}
+            petComment={petComment}
+            petBurst={petBurst}
             mood={pet.mood}
             alive={pet.alive}
             toast={toast ? toast.text : null}

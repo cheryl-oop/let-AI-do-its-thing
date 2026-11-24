@@ -6,6 +6,9 @@ import type { SessionStatus } from '../game/types'
 interface PetStageProps {
   name: string
   onRename: (name: string) => void
+  onPet: () => void
+  petComment: string | null
+  petBurst: number
   mood: number
   alive: boolean
   toast: string | null
@@ -30,6 +33,7 @@ function pick(lines: string[]): string {
 
 function bubbleLine(props: PetStageProps, band: ReturnType<typeof moodBand>): string {
   if (!props.alive) return 'I waited as long as I could…'
+  if (props.petComment) return props.petComment
   if (props.reaction) return props.reaction
   if (props.mood <= LEAVING_MOOD) return "That's it! I'm leaving!"
   if (props.noNoLabel) return `No-no app: ${props.noNoLabel} >:(`
@@ -50,6 +54,7 @@ export function PetStage(props: PetStageProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(props.name)
+  const [hopping, setHopping] = useState(false)
   const cancelled = useRef(false)
   const band = moodBand(props.mood)
   const line = bubbleLine(props, band)
@@ -70,6 +75,13 @@ export function PetStage(props: PetStageProps) {
     if (next) props.onRename(next)
     setEditing(false)
   }
+
+  useEffect(() => {
+    if (!props.petBurst) return
+    setHopping(true)
+    const timer = window.setTimeout(() => setHopping(false), 320)
+    return () => window.clearTimeout(timer)
+  }, [props.petBurst])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -140,12 +152,27 @@ export function PetStage(props: PetStageProps) {
               <div className="stage-stars" aria-hidden="true" />
         {props.alive && <div className="bubble">{line}</div>}
 
+      {props.alive && props.petBurst > 0 && (
+        <div className="pet-hearts" key={props.petBurst} aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <span
+              key={index}
+              style={{ left: `${-34 + index * 17}px`, animationDelay: `${index * 70}ms` }}
+            >
+              ♥
+            </span>
+          ))}
+        </div>
+      )}
+
       {props.alive && (
         <canvas
           ref={canvasRef}
           width={PET_SIZE * PET_SCALE}
           height={PET_SIZE * PET_SCALE}
-          className="pet-canvas"
+          className={`pet-canvas ${hopping ? 'hop' : ''}`}
+          onClick={props.onPet}
+          title="Pet your Tomodoro"
         />
       )}
 
